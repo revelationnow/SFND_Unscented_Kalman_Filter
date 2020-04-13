@@ -76,13 +76,21 @@ struct Car
 
 	double sinNegTheta;
 	double cosNegTheta;
+  double std_a_;
+  double std_yaw_;
 
+	Car(double std_a, double std_yaw)
+		: position(Vect3(0,0,0)), dimensions(Vect3(0,0,0)), color(Color(0,0,0)), ukf(std_a, std_yaw)
+	{
+    std_a_ = std_a;
+    std_yaw_ = std_yaw;
+  }
 	Car()
 		: position(Vect3(0,0,0)), dimensions(Vect3(0,0,0)), color(Color(0,0,0))
 	{}
  
-	Car(Vect3 setPosition, Vect3 setDimensions, Color setColor, float setVelocity, float setAngle, float setLf, std::string setName)
-		: position(setPosition), dimensions(setDimensions), color(setColor), velocity(setVelocity), angle(setAngle), Lf(setLf), name(setName)
+	Car(Vect3 setPosition, Vect3 setDimensions, Color setColor, float setVelocity, float setAngle, float setLf, std::string setName, double std_a, double std_yaw)
+		: position(setPosition), dimensions(setDimensions), color(setColor), velocity(setVelocity), angle(setAngle), Lf(setLf), name(setName), ukf(std_a, std_yaw)
 	{
 		orientation = getQuaternion(angle);
 		acceleration = 0;

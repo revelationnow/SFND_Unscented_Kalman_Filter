@@ -16,7 +16,18 @@ int main(int argc, char** argv)
 	float x_pos = 0;
 	viewer->setCameraPosition ( x_pos-26, 0, 15.0, x_pos+25, 0, 0, 0, 0, 1);
 
-	Highway highway(viewer);
+  double std_a = 5;
+  double std_yaw = 1.5;
+
+  if(argc == 3)
+  {
+    stringstream(argv[1])>>std_a ;
+    stringstream(argv[2])>>std_yaw ;
+    std::cout<<argv[0]<<" " << argv[1]<<" "<< argv[2]<<std::endl;
+  }
+  std::cout<<"std_a : "<<std_a<<", std_yaw : "<<std_yaw<<std::endl;
+
+	Highway highway(viewer, std_a, std_yaw);
 
 	//initHighway(viewer);
 

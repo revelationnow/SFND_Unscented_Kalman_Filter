@@ -16,8 +16,8 @@ public:
 	std::vector<double> rmseThreshold = {0.30,0.16,0.95,0.70};
 	std::vector<double> rmseFailLog = {0.0,0.0,0.0,0.0};
 	Lidar* lidar;
-	
-	// Parameters 
+
+	// Parameters
 	// --------------------------------
 	// Set which cars to track with UKF
 	std::vector<bool> trackCars = {true,true,true};
@@ -30,15 +30,15 @@ public:
 	int projectedSteps = 0;
 	// --------------------------------
 
-	Highway(pcl::visualization::PCLVisualizer::Ptr& viewer)
+	Highway(pcl::visualization::PCLVisualizer::Ptr& viewer, double std_a, double std_yaw)
 	{
 
 		tools = Tools();
-	
-		egoCar = Car(Vect3(0, 0, 0), Vect3(4, 2, 2), Color(0, 1, 0), 0, 0, 2, "egoCar");
-		
-		Car car1(Vect3(-10, 4, 0), Vect3(4, 2, 2), Color(0, 0, 1), 5, 0, 2, "car1");
-		
+
+		egoCar = Car(Vect3(0, 0, 0), Vect3(4, 2, 2), Color(0, 1, 0), 0, 0, 2, "egoCar", std_a, std_yaw);
+
+		Car car1(Vect3(-10, 4, 0), Vect3(4, 2, 2), Color(0, 0, 1), 5, 0, 2, "car1", std_a, std_yaw);
+
 		std::vector<accuation> car1_instructions;
 		accuation a = accuation(0.5*1e6, 0.5, 0.0);
 		car1_instructions.push_back(a);
@@ -48,16 +48,16 @@ public:
 		car1_instructions.push_back(a);
 		a = accuation(4.4*1e6, -2.0, 0.0);
 		car1_instructions.push_back(a);
-	
+
 		car1.setInstructions(car1_instructions);
 		if( trackCars[0] )
 		{
-			UKF ukf1;
+			UKF ukf1(std_a, std_yaw);
 			car1.setUKF(ukf1);
 		}
 		traffic.push_back(car1);
-		
-		Car car2(Vect3(25, -4, 0), Vect3(4, 2, 2), Color(0, 0, 1), -6, 0, 2, "car2");
+
+		Car car2(Vect3(25, -4, 0), Vect3(4, 2, 2), Color(0, 0, 1), -6, 0, 2, "car2", std_a, std_yaw);
 		std::vector<accuation> car2_instructions;
 		a = accuation(4.0*1e6, 3.0, 0.0);
 		car2_instructions.push_back(a);
@@ -66,12 +66,12 @@ public:
 		car2.setInstructions(car2_instructions);
 		if( trackCars[1] )
 		{
-			UKF ukf2;
+			UKF ukf2(std_a, std_yaw);
 			car2.setUKF(ukf2);
 		}
 		traffic.push_back(car2);
-	
-		Car car3(Vect3(-12, 0, 0), Vect3(4, 2, 2), Color(0, 0, 1), 1, 0, 2, "car3");
+
+		Car car3(Vect3(-12, 0, 0), Vect3(4, 2, 2), Color(0, 0, 1), 1, 0, 2, "car3", std_a, std_yaw);
 		std::vector<accuation> car3_instructions;
 		a = accuation(0.5*1e6, 2.0, 1.0);
 		car3_instructions.push_back(a);
@@ -90,13 +90,13 @@ public:
 		car3.setInstructions(car3_instructions);
 		if( trackCars[2] )
 		{
-			UKF ukf3;
+			UKF ukf3(std_a, std_yaw);
 			car3.setUKF(ukf3);
 		}
 		traffic.push_back(car3);
 
 		lidar = new Lidar(traffic,0);
-	
+
 		// render environment
 		renderHighway(0,viewer);
 		egoCar.render(viewer);
@@ -104,7 +104,7 @@ public:
 		car2.render(viewer);
 		car3.render(viewer);
 	}
-	
+
 	void stepHighway(double egoVelocity, long long timestamp, int frame_per_sec, pcl::visualization::PCLVisualizer::Ptr& viewer)
 	{
 
@@ -113,12 +113,12 @@ public:
 			pcl::PointCloud<pcl::PointXYZ>::Ptr trafficCloud = tools.loadPcd("../src/sensors/data/pcd/highway_"+std::to_string(timestamp)+".pcd");
 			renderPointCloud(viewer, trafficCloud, "trafficCloud", Color((float)184/256,(float)223/256,(float)252/256));
 		}
-		
+
 
 		// render highway environment with poles
 		renderHighway(egoVelocity*timestamp/1e6, viewer);
 		egoCar.render(viewer);
-		
+
 		for (int i = 0; i < traffic.size(); i++)
 		{
 			traffic[i].move((double)1/frame_per_sec, timestamp);
@@ -129,6 +129,11 @@ public:
 			{
 				VectorXd gt(4);
 				gt << traffic[i].position.x, traffic[i].position.y, traffic[i].velocity*cos(traffic[i].angle), traffic[i].velocity*sin(traffic[i].angle);
+        std::cout<< "Ground Truth of x : "<<std::endl;
+        std::cout<< traffic[i].position.x <<std::endl;
+        std::cout<< traffic[i].position.y <<std::endl;
+        std::cout<< traffic[i].velocity <<std::endl;
+        std::cout<< traffic[i].angle <<std::endl;
 				tools.ground_truth.push_back(gt);
 				tools.lidarSense(traffic[i], viewer, timestamp, visualize_lidar);
 				tools.radarSense(traffic[i], egoCar, viewer, timestamp, visualize_radar);
@@ -140,7 +145,7 @@ public:
     			double v2 = sin(yaw)*v;
 				estimate << traffic[i].ukf.x_[0], traffic[i].ukf.x_[1], v1, v2;
 				tools.estimations.push_back(estimate);
-	
+
 			}
 		}
 		viewer->addText("Accuracy - RMSE:", 30, 300, 20, 1, 1, 1, "rmse");
@@ -186,7 +191,7 @@ public:
 			if(rmseFailLog[3] > 0)
 				viewer->addText("Vy: "+std::to_string(rmseFailLog[3]), 30, 50, 20, 1, 0, 0, "rmse_fail_vy");
 		}
-		
+
 	}
-	
+
 };

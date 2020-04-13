@@ -9,7 +9,11 @@ class UKF {
   /**
    * Constructor
    */
-  UKF();
+  UKF(double std_a, double std_yaw);
+
+  UKF () : UKF(30, 30)
+  {
+  }
 
   /**
    * Destructor
@@ -93,8 +97,50 @@ class UKF {
   // Augmented state dimension
   int n_aug_;
 
+
+  int n_sig_;
+
   // Sigma point spreading parameter
   double lambda_;
+
+  ///* Sigma point spreading parameter
+  double lambda_aug_;
+
+  ///* the current NIS for radar
+  double NIS_radar_;
+
+  ///* the current NIS for laser
+  double NIS_laser_;
+
+  ///* Number of lidar measurements
+  int laser_count_;
+
+  ///* Number of radar measurements
+  int radar_count_;
+
+  Eigen::MatrixXd GetSigmaPoints();
+
+  Eigen::MatrixXd AugmentSigmaPoints();
+
+  Eigen::MatrixXd AugmentCovarianceMatrix();
+
+  void PredictSigmaPoints(Eigen::MatrixXd x_aug, double time_elapsed);
+
+  void GetStateFromSigmaPoints();
+
+  Eigen::MatrixXd LidarGetZSigPoints(int n_z);
+
+  void InitializeWeights();
+
+  void GetSMatrix(int n_z, Eigen::MatrixXd R, Eigen::MatrixXd Zsig, Eigen::VectorXd z_pred, bool isRadar, Eigen::MatrixXd &S);
+
+  Eigen::VectorXd GetZPred(int n_z, Eigen::MatrixXd Zsig, bool isRadar);
+
+  Eigen::MatrixXd GetTMatrix(int n_z, Eigen::MatrixXd Zsig, Eigen::VectorXd z_pred, bool isRadar);
+
+  Eigen::MatrixXd RadarGetZSigPoints(int n_z);
+
+  double NormalizeAngle(double input);
 };
 
 #endif  // UKF_H
